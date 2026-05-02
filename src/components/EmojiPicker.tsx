@@ -1,0 +1,44 @@
+'use client'
+
+const EMOJI_GROUPS = [
+  { label: '常用', emojis: ['⭐', '🌟', '✨', '💫', '🎉', '🎊', '❤️', '👍'] },
+  { label: '日常', emojis: ['☀️', '🌙', '🍚', '🛏️', '🧹', '🏠', '📚', '✏️'] },
+  { label: '运动', emojis: ['⚽', '🏀', '🏃', '🚴', '🏊', '🤸', '🎾', '🎯'] },
+  { label: '艺术', emojis: ['🎨', '🎵', '🎹', '🥁', '📷', '🎭', '✂️', '📝'] },
+  { label: '学习', emojis: ['📖', '🔤', '🔢', '🧩', '💡', '🔬', '🌍', '📏'] },
+  { label: '奖励', emojis: ['🎁', '🏆', '🥇', '👑', '💎', '🍕', '🍦', '🧸'] },
+  { label: '娱乐', emojis: ['📺', '🎬', '🎮', '🎪', '🎢', '🎡', '🎠', '🏄'] },
+  { label: '自然', emojis: ['🌳', '🌸', '🌻', '🦋', '🐶', '🐱', '🐰', '🐼'] },
+]
+
+export function EmojiPicker({ value, onChange }: { value: string; onChange: (emoji: string) => void }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-sm text-muted-foreground">已选:</span>
+        <span className="text-2xl">{value}</span>
+      </div>
+      {EMOJI_GROUPS.map((group) => (
+        <div key={group.label}>
+          <div className="text-xs text-muted-foreground mb-1">{group.label}</div>
+          <div className="flex flex-wrap gap-1">
+            {group.emojis.map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                className={`w-11 h-11 text-xl rounded-lg transition-all ${
+                  value === emoji
+                    ? 'bg-amber-200 scale-110 shadow-sm'
+                    : 'hover:bg-gray-100 active:scale-95'
+                }`}
+                onClick={() => onChange(emoji)}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
