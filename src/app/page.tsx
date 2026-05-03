@@ -120,12 +120,12 @@ export default function ChildDashboard() {
           {tasks?.map((task) => (
             <motion.div key={task.id} whileTap={{ scale: 0.93 }}>
               <Card
-                className="cursor-pointer hover:shadow-md transition-shadow active:bg-amber-50"
+                className="cursor-pointer hover:shadow-md transition-shadow active:bg-amber-50 h-[76px]"
                 onClick={() => handleAddPoints(task.id!, task.title)}
               >
-                <CardContent className="flex flex-col items-center py-3 gap-0.5 min-h-[68px] justify-center">
+                <CardContent className="flex flex-col items-center justify-center h-full py-0 gap-0.5">
                   <span className="text-xl">{task.icon}</span>
-                  <span className="font-medium text-[11px] leading-tight text-center">{task.title}</span>
+                  <span className="font-medium text-[11px] leading-tight text-center line-clamp-2">{task.title}</span>
                 </CardContent>
               </Card>
             </motion.div>
