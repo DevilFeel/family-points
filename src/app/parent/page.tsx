@@ -55,19 +55,19 @@ export default function ParentPage() {
   return (
     <div className="min-h-dvh pb-6 bg-white">
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-blue-500 text-white px-4 py-3">
+      <div className="sticky top-0 z-40 bg-blue-600 text-white px-4 py-3 shadow-md">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/" className="text-xl text-white">←</Link>
+            <Link href="/" className="text-xl text-white font-bold">←</Link>
             <div>
-              <div className="font-bold">家长管理</div>
+              <div className="font-bold text-lg">家长管理</div>
               <div className="text-sm text-blue-200">
                 {profile?.name}: {profile?.balance ?? 0} 分
               </div>
             </div>
           </div>
           <Link href="/settings">
-            <Button variant="ghost" size="sm" className="text-blue-100 hover:text-white hover:bg-blue-600">设置</Button>
+            <Button variant="ghost" size="sm" className="text-blue-100 hover:text-white hover:bg-blue-700">设置</Button>
           </Link>
         </div>
       </div>

@@ -87,10 +87,10 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-dvh pb-6 bg-white">
-      <div className="sticky top-0 z-40 bg-blue-500 text-white px-4 py-3">
+      <div className="sticky top-0 z-40 bg-blue-600 text-white px-4 py-3 shadow-md">
         <div className="flex items-center gap-3">
-          <Link href="/parent" className="text-xl text-white">←</Link>
-          <div className="font-bold">设置</div>
+          <Link href="/parent" className="text-xl text-white font-bold">←</Link>
+          <div className="font-bold text-lg">设置</div>
         </div>
       </div>
 
