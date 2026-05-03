@@ -60,25 +60,25 @@ export default function ParentPage() {
   }
 
   if (!mounted) {
-    return <div className="min-h-dvh flex items-center justify-center text-amber-600">加载中...</div>
+    return <div className="min-h-dvh flex items-center justify-center text-blue-600">加载中...</div>
   }
 
   return (
-    <div className="min-h-dvh pb-6">
+    <div className="min-h-dvh pb-6 bg-white">
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-sm border-b px-4 py-3">
+      <div className="sticky top-0 z-40 bg-blue-500 text-white px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/" className="text-xl">←</Link>
+            <Link href="/" className="text-xl text-white">←</Link>
             <div>
-              <div className="font-bold text-amber-800">家长管理</div>
-              <div className="text-sm text-muted-foreground">
+              <div className="font-bold">家长管理</div>
+              <div className="text-sm text-blue-200">
                 {profile?.name}: {profile?.balance ?? 0} 分
               </div>
             </div>
           </div>
           <Link href="/settings">
-            <Button variant="ghost" size="sm">设置</Button>
+            <Button variant="ghost" size="sm" className="text-blue-100 hover:text-white hover:bg-blue-600">设置</Button>
           </Link>
         </div>
       </div>
@@ -95,7 +95,7 @@ export default function ParentPage() {
             <div className={`text-3xl font-bold px-6 py-3 rounded-2xl shadow-lg ${
               feedback.points >= 0
                 ? 'bg-green-500 text-white'
-                : 'bg-orange-500 text-white'
+                : 'bg-red-500 text-white'
             }`}>
               {feedback.points >= 0 ? '+' : ''}{feedback.points} {feedback.text}
             </div>
@@ -158,7 +158,7 @@ export default function ParentPage() {
 
       <div className="px-4 mt-4">
         <Tabs defaultValue="tasks">
-          <TabsList className="w-full grid grid-cols-4">
+          <TabsList className="w-full grid grid-cols-4 bg-gray-100">
             <TabsTrigger value="tasks">任务</TabsTrigger>
             <TabsTrigger value="manual">调整</TabsTrigger>
             <TabsTrigger value="rewards">奖励</TabsTrigger>
@@ -290,11 +290,11 @@ export default function ParentPage() {
                     <div className="text-xs text-muted-foreground">今日获得</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-lg font-bold text-orange-600">-{todayStats.spend}</div>
+                    <div className="text-lg font-bold text-red-500">-{todayStats.spend}</div>
                     <div className="text-xs text-muted-foreground">今日消耗</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-lg font-bold text-amber-600">{todayStats.count}</div>
+                    <div className="text-lg font-bold text-blue-600">{todayStats.count}</div>
                     <div className="text-xs text-muted-foreground">操作次数</div>
                   </div>
                 </CardContent>
@@ -305,7 +305,7 @@ export default function ParentPage() {
             {weeklyStats && (
               <Card className="mb-3">
                 <CardContent className="pt-4 pb-3">
-                  <div className="text-sm font-medium text-amber-800 mb-3">近7天趋势</div>
+                  <div className="text-sm font-semibold text-gray-700 mb-3">近7天趋势</div>
                   {weeklyStats.some(d => d.earn > 0 || d.spend > 0) ? (
                     <>
                       <div className="flex items-end gap-1.5 h-24">
@@ -322,7 +322,7 @@ export default function ParentPage() {
                                   title={`获得 ${day.earn}`}
                                 />
                                 <div
-                                  className="w-2.5 rounded-t-sm bg-orange-400 transition-all"
+                                  className="w-2.5 rounded-t-sm bg-red-400 transition-all"
                                   style={{ height: `${spendH}%`, minHeight: day.spend > 0 ? '8px' : '0' }}
                                   title={`消耗 ${day.spend}`}
                                 />
@@ -334,7 +334,7 @@ export default function ParentPage() {
                       </div>
                       <div className="flex items-center justify-center gap-4 mt-2 text-[10px] text-muted-foreground">
                         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-green-400 inline-block" />获得</span>
-                        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-orange-400 inline-block" />消耗</span>
+                        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-red-400 inline-block" />消耗</span>
                       </div>
                     </>
                   ) : (

@@ -17,7 +17,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#f59e0b",
+  themeColor: "#3b82f6",
 };
 
 export default function RootLayout({
@@ -40,7 +40,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="font-sans antialiased min-h-dvh bg-gradient-to-b from-amber-50 to-orange-50">
+      <body className="font-sans antialiased min-h-dvh bg-gray-50">
         {children}
       </body>
     </html>

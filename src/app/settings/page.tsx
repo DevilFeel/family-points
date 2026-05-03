@@ -27,7 +27,7 @@ export default function SettingsPage() {
   }, [])
 
   if (!mounted) {
-    return <div className="min-h-dvh flex items-center justify-center text-amber-600">加载中...</div>
+    return <div className="min-h-dvh flex items-center justify-center text-blue-600">加载中...</div>
   }
 
   const handleExport = async () => {
@@ -86,11 +86,11 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-dvh pb-6">
-      <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-sm border-b px-4 py-3">
+    <div className="min-h-dvh pb-6 bg-white">
+      <div className="sticky top-0 z-40 bg-blue-500 text-white px-4 py-3">
         <div className="flex items-center gap-3">
-          <Link href="/parent" className="text-xl">←</Link>
-          <div className="font-bold text-amber-800">设置</div>
+          <Link href="/parent" className="text-xl text-white">←</Link>
+          <div className="font-bold">设置</div>
         </div>
       </div>
 
@@ -148,7 +148,7 @@ export default function SettingsPage() {
 
         {/* Home link */}
         <div className="text-center pt-4">
-          <Link href="/" className="text-sm text-amber-600">
+          <Link href="/" className="text-sm text-blue-600">
             返回首页
           </Link>
         </div>
