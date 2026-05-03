@@ -147,8 +147,35 @@ export default function ChildDashboard() {
             placeholder="输入做了什么..."
             className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
           />
-          <Button type="submit" size="sm" className="px-4 shrink-0">
+          <Button type="submit" size="sm" className="px-4 shrink-0 bg-green-500 hover:bg-green-600">
             +1
+          </Button>
+        </form>
+      </div>
+
+      {/* Manual deduct */}
+      <div className="mt-4">
+        <div className="text-sm font-medium text-orange-700 mb-2">自定义扣分</div>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault()
+            const form = new FormData(e.currentTarget)
+            const reason = (form.get('reason') as string)?.trim()
+            if (!reason) return
+            await manualAdjust(1, reason, 'deduct')
+            showFeedback(reason, -1)
+            ;(e.target as HTMLFormElement).reset()
+            ;(document.activeElement as HTMLElement)?.blur()
+          }}
+          className="flex gap-2"
+        >
+          <input
+            name="reason"
+            placeholder="输入扣分原因..."
+            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+          />
+          <Button type="submit" size="sm" className="px-4 shrink-0 bg-orange-500 hover:bg-orange-600">
+            -1
           </Button>
         </form>
       </div>
