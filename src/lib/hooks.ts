@@ -25,6 +25,18 @@ export function useAllRewards() {
   return useLiveQuery(() => db.rewards.toArray())
 }
 
+export function useTodayLogs() {
+  return useLiveQuery(async () => {
+    const startOfDay = new Date()
+    startOfDay.setHours(0, 0, 0, 0)
+    return db.logs
+      .where('timestamp')
+      .aboveOrEqual(startOfDay.getTime())
+      .reverse()
+      .sortBy('timestamp')
+  })
+}
+
 export function useTodayStats() {
   return useLiveQuery(async () => {
     const startOfDay = new Date()

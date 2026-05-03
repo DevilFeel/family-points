@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { motion, useSpring, useTransform, AnimatePresence } from 'framer-motion'
-import { useProfile, useTasks, useAllRewards } from '@/lib/hooks'
+import { useProfile, useTasks, useAllRewards, useTodayLogs } from '@/lib/hooks'
 import { seedDatabase } from '@/lib/seed'
 import { addPoints, redeemReward, manualAdjust } from '@/lib/actions'
 import { Card, CardContent } from '@/components/ui/card'
@@ -39,6 +39,7 @@ export default function ChildDashboard() {
   const profile = useProfile()
   const tasks = useTasks()
   const rewards = useAllRewards()
+  const todayLogs = useTodayLogs()
 
 
   useEffect(() => {
@@ -306,6 +307,42 @@ export default function ChildDashboard() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Today's records */}
+      {todayLogs && todayLogs.length > 0 && (
+        <div className="mt-5">
+          <div className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+            <span className="w-1 h-4 bg-blue-500 rounded-full inline-block"></span>
+            今日记录
+          </div>
+          <div className="space-y-1.5">
+            {todayLogs.map((log) => {
+              const isEarn = log.amount > 0
+              return (
+                <div
+                  key={log.id}
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
+                    isEarn
+                      ? 'bg-green-50 border border-green-100'
+                      : 'bg-red-50 border border-red-100'
+                  }`}
+                >
+                  <span className={`flex-1 truncate ${isEarn ? 'text-gray-700' : 'text-gray-700'}`}>
+                    {log.reason}
+                  </span>
+                  <span
+                    className={`font-semibold tabular-nums shrink-0 ml-2 ${
+                      isEarn ? 'text-green-600' : 'text-red-600'
+                    }`}
+                  >
+                    {isEarn ? '+' : ''}{log.amount}分
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
