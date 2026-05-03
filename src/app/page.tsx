@@ -53,11 +53,13 @@ export default function ChildDashboard() {
   }, [feedback])
 
   const handleAddPoints = async (taskId: number, title: string) => {
+    if (!confirm(`确认加分：${title} +1分？`)) return
     await addPoints(taskId)
     showFeedback(title, 1)
   }
 
   const handleRedeem = async (rewardId: number, title: string, cost: number) => {
+    if (!confirm(`确认兑换：${title} -${cost}分？`)) return
     const ok = await redeemReward(rewardId)
     if (ok) {
       showFeedback(`兑换: ${title}`, -cost)
