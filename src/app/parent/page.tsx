@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useProfile, useTasks, useAllRewards, useLogs, useTodayStats } from '@/lib/hooks'
 import { seedDatabase } from '@/lib/seed'
-import { manualAdjust, redeemReward, addTask, updateTask, deleteTask, addReward, deleteReward } from '@/lib/actions'
+import { manualAdjust, redeemReward, addTask, updateTask, deleteTask, addReward, deleteReward, deleteLog } from '@/lib/actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -294,15 +294,29 @@ export default function ParentPage() {
               {logs?.map((log) => (
                 <Card key={log.id}>
                   <CardContent className="flex items-center justify-between py-2">
-                    <div>
+                    <div className="flex-1">
                       <div className="text-sm font-medium">{log.reason}</div>
                       <div className="text-xs text-muted-foreground">
                         {new Date(log.timestamp).toLocaleString('zh-CN')}
                       </div>
                     </div>
-                    <Badge variant={log.amount >= 0 ? 'default' : 'destructive'}>
-                      {log.amount >= 0 ? '+' : ''}{log.amount}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={log.amount >= 0 ? 'default' : 'destructive'}>
+                        {log.amount >= 0 ? '+' : ''}{log.amount}
+                      </Badge>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                        onClick={async () => {
+                          if (confirm(`确定删除这条记录吗？\n${log.reason} ${log.amount >= 0 ? '+' : ''}${log.amount}分`)) {
+                            await deleteLog(log.id!)
+                          }
+                        }}
+                      >
+                        删除
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}

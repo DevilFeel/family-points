@@ -83,6 +83,23 @@ export async function deleteReward(id: number) {
   await db.rewards.delete(id)
 }
 
+export async function deleteLog(id: number) {
+  const log = await db.logs.get(id)
+  if (!log) return
+
+  await db.transaction('rw', [db.profiles, db.logs], async () => {
+    const profile = await db.profiles.toCollection().first()
+    if (!profile?.id) return
+
+    // 删除记录时，积分要反向调整
+    // 如果是加分记录（amount > 0），删除后需要减掉这些积分
+    // 如果是扣分记录（amount < 0），删除后需要加回这些积分
+    const balanceAdjustment = -log.amount
+    await db.profiles.update(profile.id, { balance: profile.balance + balanceAdjustment })
+    await db.logs.delete(id)
+  })
+}
+
 export async function exportDatabase() {
   const data = {
     profiles: await db.profiles.toArray(),
