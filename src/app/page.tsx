@@ -134,9 +134,10 @@ export default function ChildDashboard() {
             e.preventDefault()
             const form = new FormData(e.currentTarget)
             const reason = (form.get('reason') as string)?.trim()
+            const amount = Number(form.get('amount')) || 1
             if (!reason) return
-            await manualAdjust(1, reason, 'manual')
-            showFeedback(reason, 1)
+            await manualAdjust(amount, reason, 'manual')
+            showFeedback(reason, amount)
             ;(e.target as HTMLFormElement).reset()
             ;(document.activeElement as HTMLElement)?.blur()
           }}
@@ -147,8 +148,18 @@ export default function ChildDashboard() {
             placeholder="输入做了什么..."
             className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
           />
+          <select
+            name="amount"
+            className="rounded-lg border border-gray-200 px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+          >
+            <option value="1">+1</option>
+            <option value="2">+2</option>
+            <option value="3">+3</option>
+            <option value="5">+5</option>
+            <option value="10">+10</option>
+          </select>
           <Button type="submit" size="sm" className="px-4 shrink-0 bg-green-500 hover:bg-green-600">
-            +1
+            加分
           </Button>
         </form>
       </div>
@@ -161,9 +172,10 @@ export default function ChildDashboard() {
             e.preventDefault()
             const form = new FormData(e.currentTarget)
             const reason = (form.get('reason') as string)?.trim()
+            const amount = Number(form.get('amount')) || 1
             if (!reason) return
-            await manualAdjust(1, reason, 'deduct')
-            showFeedback(reason, -1)
+            await manualAdjust(amount, reason, 'deduct')
+            showFeedback(reason, -amount)
             ;(e.target as HTMLFormElement).reset()
             ;(document.activeElement as HTMLElement)?.blur()
           }}
@@ -174,8 +186,18 @@ export default function ChildDashboard() {
             placeholder="输入扣分原因..."
             className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
           />
+          <select
+            name="amount"
+            className="rounded-lg border border-gray-200 px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
+          >
+            <option value="1">-1</option>
+            <option value="2">-2</option>
+            <option value="3">-3</option>
+            <option value="5">-5</option>
+            <option value="10">-10</option>
+          </select>
           <Button type="submit" size="sm" className="px-4 shrink-0 bg-orange-500 hover:bg-orange-600">
-            -1
+            扣分
           </Button>
         </form>
       </div>

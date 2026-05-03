@@ -35,3 +35,27 @@ export function useTodayStats() {
     return { earn, spend, count: todayLogs.length }
   })
 }
+
+export function useWeeklyStats() {
+  return useLiveQuery(async () => {
+    const days: { label: string; earn: number; spend: number; date: string }[] = []
+    const now = new Date()
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now)
+      d.setHours(0, 0, 0, 0)
+      d.setDate(d.getDate() - i)
+      const next = new Date(d)
+      next.setDate(next.getDate() + 1)
+      const dayLogs = await db.logs.where('timestamp').between(d.getTime(), next.getTime()).toArray()
+      const earn = dayLogs.filter(l => l.amount > 0).reduce((s, l) => s + l.amount, 0)
+      const spend = dayLogs.filter(l => l.amount < 0).reduce((s, l) => s + Math.abs(l.amount), 0)
+      days.push({
+        label: d.toLocaleDateString('zh-CN', { weekday: 'short' }),
+        earn,
+        spend,
+        date: d.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }),
+      })
+    }
+    return days
+  })
+}

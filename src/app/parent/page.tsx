@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useProfile, useTasks, useAllRewards, useLogs, useTodayStats } from '@/lib/hooks'
+import { useProfile, useTasks, useAllRewards, useLogs, useTodayStats, useWeeklyStats } from '@/lib/hooks'
 import { seedDatabase } from '@/lib/seed'
 import { manualAdjust, redeemReward, addTask, updateTask, deleteTask, addReward, deleteReward, deleteLog } from '@/lib/actions'
 import { Button } from '@/components/ui/button'
@@ -29,6 +29,7 @@ export default function ParentPage() {
   const rewards = useAllRewards()
   const logs = useLogs()
   const todayStats = useTodayStats()
+  const weeklyStats = useWeeklyStats()
 
   const showFeedback = useCallback((text: string, points: number) => {
     setFeedback({ text, points })
@@ -286,6 +287,43 @@ export default function ParentPage() {
                   <div className="text-center">
                     <div className="text-lg font-bold text-amber-600">{todayStats.count}</div>
                     <div className="text-xs text-muted-foreground">操作次数</div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Weekly trend chart */}
+            {weeklyStats && weeklyStats.some(d => d.earn > 0 || d.spend > 0) && (
+              <Card className="mb-3">
+                <CardContent className="pt-4 pb-3">
+                  <div className="text-sm font-medium text-amber-800 mb-3">近7天趋势</div>
+                  <div className="flex items-end gap-1.5 h-24">
+                    {weeklyStats.map((day, i) => {
+                      const maxVal = Math.max(...weeklyStats.map(d => Math.max(d.earn, d.spend)), 1)
+                      const earnH = Math.max((day.earn / maxVal) * 100, day.earn > 0 ? 12 : 0)
+                      const spendH = Math.max((day.spend / maxVal) * 100, day.spend > 0 ? 12 : 0)
+                      return (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                          <div className="flex items-end gap-0.5 w-full justify-center" style={{ height: '72px' }}>
+                            <div
+                              className="w-2.5 rounded-t-sm bg-green-400 transition-all"
+                              style={{ height: `${earnH}%`, minHeight: day.earn > 0 ? '8px' : '0' }}
+                              title={`获得 ${day.earn}`}
+                            />
+                            <div
+                              className="w-2.5 rounded-t-sm bg-orange-400 transition-all"
+                              style={{ height: `${spendH}%`, minHeight: day.spend > 0 ? '8px' : '0' }}
+                              title={`消耗 ${day.spend}`}
+                            />
+                          </div>
+                          <div className="text-[10px] text-muted-foreground leading-none">{day.label}</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div className="flex items-center justify-center gap-4 mt-2 text-[10px] text-muted-foreground">
+                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-green-400 inline-block" />获得</span>
+                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-orange-400 inline-block" />消耗</span>
                   </div>
                 </CardContent>
               </Card>
