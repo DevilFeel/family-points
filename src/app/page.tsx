@@ -34,6 +34,8 @@ export default function ChildDashboard() {
   const [mounted, setMounted] = useState(false)
   const [feedback, setFeedback] = useState<{ text: string; points: number } | null>(null)
   const [rewardExpanded, setRewardExpanded] = useState(false)
+  const [customAddAmount, setCustomAddAmount] = useState(false)
+  const [customDeductAmount, setCustomDeductAmount] = useState(false)
   const profile = useProfile()
   const tasks = useTasks()
   const rewards = useAllRewards()
@@ -155,11 +157,13 @@ export default function ChildDashboard() {
             e.preventDefault()
             const form = new FormData(e.currentTarget)
             const reason = (form.get('reason') as string)?.trim()
-            const amount = Number(form.get('amount')) || 1
-            if (!reason) return
+            const sel = form.get('amount') as string
+            const amount = sel === 'custom' ? Number(form.get('customAmount')) : Number(sel)
+            if (!reason || !amount || amount <= 0) return
             await manualAdjust(amount, reason, 'manual')
             showFeedback(reason, amount)
             ;(e.target as HTMLFormElement).reset()
+            setCustomAddAmount(false)
             ;(document.activeElement as HTMLElement)?.blur()
           }}
           className="flex gap-2"
@@ -172,13 +176,24 @@ export default function ChildDashboard() {
           <select
             name="amount"
             className="rounded-lg border border-gray-200 px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-400"
+            onChange={(e) => setCustomAddAmount(e.target.value === 'custom')}
           >
             <option value="1">+1</option>
             <option value="2">+2</option>
             <option value="3">+3</option>
             <option value="5">+5</option>
             <option value="10">+10</option>
+            <option value="custom">自定义</option>
           </select>
+          {customAddAmount && (
+            <input
+              name="customAmount"
+              type="number"
+              min="1"
+              placeholder="分值"
+              className="w-16 rounded-lg border border-gray-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+            />
+          )}
           <Button type="submit" size="sm" className="px-4 shrink-0 bg-green-500 hover:bg-green-600 text-white">
             加分
           </Button>
@@ -196,11 +211,13 @@ export default function ChildDashboard() {
             e.preventDefault()
             const form = new FormData(e.currentTarget)
             const reason = (form.get('reason') as string)?.trim()
-            const amount = Number(form.get('amount')) || 1
-            if (!reason) return
+            const sel = form.get('amount') as string
+            const amount = sel === 'custom' ? Number(form.get('customAmount')) : Number(sel)
+            if (!reason || !amount || amount <= 0) return
             await manualAdjust(amount, reason, 'deduct')
             showFeedback(reason, -amount)
             ;(e.target as HTMLFormElement).reset()
+            setCustomDeductAmount(false)
             ;(document.activeElement as HTMLElement)?.blur()
           }}
           className="flex gap-2"
@@ -213,13 +230,24 @@ export default function ChildDashboard() {
           <select
             name="amount"
             className="rounded-lg border border-gray-200 px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-400"
+            onChange={(e) => setCustomDeductAmount(e.target.value === 'custom')}
           >
             <option value="1">-1</option>
             <option value="2">-2</option>
             <option value="3">-3</option>
             <option value="5">-5</option>
             <option value="10">-10</option>
+            <option value="custom">自定义</option>
           </select>
+          {customDeductAmount && (
+            <input
+              name="customAmount"
+              type="number"
+              min="1"
+              placeholder="分值"
+              className="w-16 rounded-lg border border-gray-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+            />
+          )}
           <Button type="submit" size="sm" className="px-4 shrink-0 bg-red-500 hover:bg-red-600 text-white">
             扣分
           </Button>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useProfile, useTasks, useAllRewards, useLogs, useTodayStats, useWeeklyStats } from '@/lib/hooks'
 import { seedDatabase } from '@/lib/seed'
-import { manualAdjust, redeemReward, addTask, updateTask, deleteTask, addReward, deleteReward, deleteLog } from '@/lib/actions'
+import { redeemReward, addTask, updateTask, deleteTask, addReward, deleteReward, deleteLog } from '@/lib/actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -40,17 +40,6 @@ export default function ParentPage() {
     const t = setTimeout(() => setFeedback(null), 1200)
     return () => clearTimeout(t)
   }, [feedback])
-
-  const handleManualAdd = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const form = new FormData(e.currentTarget)
-    const amount = Number(form.get('amount'))
-    const reason = form.get('reason') as string
-    if (!amount || !reason) return
-    await manualAdjust(Math.abs(amount), reason, amount >= 0 ? 'manual' : 'deduct')
-    ;(e.target as HTMLFormElement).reset()
-    showFeedback(reason, amount)
-  }
 
   const handleRedeem = async (rewardId: number, title: string, cost: number) => {
     const ok = await redeemReward(rewardId)
@@ -158,9 +147,8 @@ export default function ParentPage() {
 
       <div className="px-4 mt-4">
         <Tabs defaultValue="tasks">
-          <TabsList className="w-full grid grid-cols-4 bg-gray-100">
+          <TabsList className="w-full grid grid-cols-3 bg-gray-100">
             <TabsTrigger value="tasks">任务</TabsTrigger>
-            <TabsTrigger value="manual">调整</TabsTrigger>
             <TabsTrigger value="rewards">奖励</TabsTrigger>
             <TabsTrigger value="log">记录</TabsTrigger>
           </TabsList>
@@ -193,54 +181,6 @@ export default function ParentPage() {
             </div>
 
             <TaskFormDialog onAdd={addTask} count={tasks?.length ?? 0} />
-          </TabsContent>
-
-          {/* Manual adjust */}
-          <TabsContent value="manual" className="mt-4">
-            <Card>
-              <CardContent className="pt-6">
-                <form onSubmit={handleManualAdd} className="space-y-4">
-                  <div>
-                    <Label>分值（正数加分，负数扣分）</Label>
-                    <Input type="number" name="amount" placeholder="输入分值" required />
-                  </div>
-                  <div>
-                    <Label>原因</Label>
-                    <Input name="reason" placeholder="备注原因" required />
-                  </div>
-                  <Button type="submit" className="w-full">确认</Button>
-                </form>
-              </CardContent>
-            </Card>
-
-            <Card className="mt-4">
-              <CardContent className="pt-6 space-y-3">
-                <div className="font-medium">快速扣分</div>
-                <div>
-                  <Input
-                    id="quickDeductReason"
-                    placeholder="扣分原因（选填）"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  {[1, 3, 5].map((amt) => (
-                    <Button
-                      key={amt}
-                      variant="outline"
-                      className="flex-1 text-red-500 border-red-200 hover:bg-red-50"
-                      onClick={async () => {
-                        const reason = (document.getElementById('quickDeductReason') as HTMLInputElement)?.value?.trim() || '扣分'
-                        await manualAdjust(amt, reason, 'deduct')
-                        showFeedback(reason, -amt)
-                        ;(document.getElementById('quickDeductReason') as HTMLInputElement).value = ''
-                      }}
-                    >
-                      -{amt}分
-                    </Button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
 
           {/* Rewards */}
