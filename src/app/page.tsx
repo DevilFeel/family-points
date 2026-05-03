@@ -59,10 +59,16 @@ export default function ChildDashboard() {
   }
 
   const handleRedeem = async (rewardId: number, title: string, cost: number) => {
-    if (!confirm(`确认兑换：${title} -${cost}分？`)) return
-    const ok = await redeemReward(rewardId)
+    const currentBalance = profile?.balance ?? 0
+    if (currentBalance >= cost) {
+      if (!confirm('确认兑换: ' + title + ' -' + cost + '分?')) return
+    } else {
+      const diff = cost - currentBalance
+      if (!confirm('当前 ' + currentBalance + ' 分, 兑换 ' + title + ' 需要 ' + cost + ' 分\n将欠 ' + diff + ' 分(积分变负, 后续加分补回)\n\n确认兑换?')) return
+    }
+    const ok = await redeemReward(rewardId, true)
     if (ok) {
-      showFeedback(`兑换: ${title}`, -cost)
+      showFeedback('兑换: ' + title, -cost)
     }
   }
 
@@ -97,7 +103,7 @@ export default function ChildDashboard() {
       </AnimatePresence>
 
       {/* Top: score - blue hero area */}
-      <div className="flex-shrink-0 bg-blue-500 rounded-2xl px-5 py-5 text-white -mx-4 px-4 mb-4">
+      <div className={`flex-shrink-0 rounded-2xl px-5 py-5 text-white -mx-4 px-4 mb-4 ${balance < 0 ? 'bg-red-500' : 'bg-blue-500'}`}>
         <div className="flex items-center justify-between">
           <div className="text-lg font-bold">{name}的积分</div>
           <Link
@@ -240,8 +246,8 @@ export default function ChildDashboard() {
               {enabledRewards.map((reward) => {
                 const canRedeem = balance >= reward.cost
                 return (
-                  <motion.div key={reward.id} whileTap={canRedeem ? { scale: 0.97 } : undefined}>
-                    <Card className={canRedeem ? 'cursor-pointer border-purple-200 bg-purple-50/30' : 'opacity-50'}>
+                  <motion.div key={reward.id} whileTap={{ scale: 0.97 }}>
+                    <Card className="cursor-pointer border-purple-200 bg-purple-50/30">
                       <CardContent className="flex items-center justify-between py-2.5">
                         <div className="flex items-center gap-2">
                           <span className="text-xl">{reward.icon}</span>
@@ -252,11 +258,10 @@ export default function ChildDashboard() {
                         </div>
                         <Button
                           size="sm"
-                          disabled={!canRedeem}
-                          className={canRedeem ? 'bg-purple-500 hover:bg-purple-600 text-white' : ''}
+                          className={canRedeem ? 'bg-purple-500 hover:bg-purple-600 text-white' : 'bg-orange-400 hover:bg-orange-500 text-white'}
                           onClick={() => handleRedeem(reward.id!, reward.title, reward.cost)}
                         >
-                          {canRedeem ? `${reward.cost}分` : '不足'}
+                          {canRedeem ? `${reward.cost}分` : `欠${reward.cost - balance}分`}
                         </Button>
                       </CardContent>
                     </Card>

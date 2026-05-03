@@ -35,13 +35,14 @@ export async function manualAdjust(amount: number, reason: string, type: 'manual
   })
 }
 
-export async function redeemReward(rewardId: number) {
+export async function redeemReward(rewardId: number, allowNegative = false) {
   const reward = await db.rewards.get(rewardId)
   if (!reward) return false
 
   return db.transaction('rw', [db.profiles, db.logs], async () => {
     const profile = await db.profiles.toCollection().first()
-    if (!profile?.id || profile.balance < reward.cost) return false
+    if (!profile?.id) return false
+    if (!allowNegative && profile.balance < reward.cost) return false
     await db.profiles.update(profile.id, { balance: profile.balance - reward.cost })
     await db.logs.add({
       profileId: profile.id,
