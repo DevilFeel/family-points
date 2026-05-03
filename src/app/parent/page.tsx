@@ -159,7 +159,7 @@ export default function ParentPage() {
       <div className="px-4 mt-4">
         <Tabs defaultValue="tasks">
           <TabsList className="w-full grid grid-cols-4">
-            <TabsTrigger value="tasks">任务管理</TabsTrigger>
+            <TabsTrigger value="tasks">任务</TabsTrigger>
             <TabsTrigger value="manual">调整</TabsTrigger>
             <TabsTrigger value="rewards">奖励</TabsTrigger>
             <TabsTrigger value="log">记录</TabsTrigger>
@@ -216,20 +216,29 @@ export default function ParentPage() {
             <Card className="mt-4">
               <CardContent className="pt-6 space-y-3">
                 <div className="font-medium">快速扣分</div>
-                {[-1, -3, -5].map((amt) => (
-                  <Button
-                    key={amt}
-                    variant="outline"
-                    className="w-full justify-between"
-                    onClick={async () => {
-                      await manualAdjust(Math.abs(amt), '扣分', 'deduct')
-                      showFeedback('扣分', amt)
-                    }}
-                  >
-                    <span>{amt}分</span>
-                    <span className="text-red-500">扣分</span>
-                  </Button>
-                ))}
+                <div>
+                  <Input
+                    id="quickDeductReason"
+                    placeholder="扣分原因（选填）"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  {[1, 3, 5].map((amt) => (
+                    <Button
+                      key={amt}
+                      variant="outline"
+                      className="flex-1 text-red-500 border-red-200 hover:bg-red-50"
+                      onClick={async () => {
+                        const reason = (document.getElementById('quickDeductReason') as HTMLInputElement)?.value?.trim() || '扣分'
+                        await manualAdjust(amt, reason, 'deduct')
+                        showFeedback(reason, -amt)
+                        ;(document.getElementById('quickDeductReason') as HTMLInputElement).value = ''
+                      }}
+                    >
+                      -{amt}分
+                    </Button>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -293,38 +302,46 @@ export default function ParentPage() {
             )}
 
             {/* Weekly trend chart */}
-            {weeklyStats && weeklyStats.some(d => d.earn > 0 || d.spend > 0) && (
+            {weeklyStats && (
               <Card className="mb-3">
                 <CardContent className="pt-4 pb-3">
                   <div className="text-sm font-medium text-amber-800 mb-3">近7天趋势</div>
-                  <div className="flex items-end gap-1.5 h-24">
-                    {weeklyStats.map((day, i) => {
-                      const maxVal = Math.max(...weeklyStats.map(d => Math.max(d.earn, d.spend)), 1)
-                      const earnH = Math.max((day.earn / maxVal) * 100, day.earn > 0 ? 12 : 0)
-                      const spendH = Math.max((day.spend / maxVal) * 100, day.spend > 0 ? 12 : 0)
-                      return (
-                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                          <div className="flex items-end gap-0.5 w-full justify-center" style={{ height: '72px' }}>
-                            <div
-                              className="w-2.5 rounded-t-sm bg-green-400 transition-all"
-                              style={{ height: `${earnH}%`, minHeight: day.earn > 0 ? '8px' : '0' }}
-                              title={`获得 ${day.earn}`}
-                            />
-                            <div
-                              className="w-2.5 rounded-t-sm bg-orange-400 transition-all"
-                              style={{ height: `${spendH}%`, minHeight: day.spend > 0 ? '8px' : '0' }}
-                              title={`消耗 ${day.spend}`}
-                            />
-                          </div>
-                          <div className="text-[10px] text-muted-foreground leading-none">{day.label}</div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                  <div className="flex items-center justify-center gap-4 mt-2 text-[10px] text-muted-foreground">
-                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-green-400 inline-block" />获得</span>
-                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-orange-400 inline-block" />消耗</span>
-                  </div>
+                  {weeklyStats.some(d => d.earn > 0 || d.spend > 0) ? (
+                    <>
+                      <div className="flex items-end gap-1.5 h-24">
+                        {weeklyStats.map((day, i) => {
+                          const maxVal = Math.max(...weeklyStats.map(d => Math.max(d.earn, d.spend)), 1)
+                          const earnH = Math.max((day.earn / maxVal) * 100, day.earn > 0 ? 12 : 0)
+                          const spendH = Math.max((day.spend / maxVal) * 100, day.spend > 0 ? 12 : 0)
+                          return (
+                            <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                              <div className="flex items-end gap-0.5 w-full justify-center" style={{ height: '72px' }}>
+                                <div
+                                  className="w-2.5 rounded-t-sm bg-green-400 transition-all"
+                                  style={{ height: `${earnH}%`, minHeight: day.earn > 0 ? '8px' : '0' }}
+                                  title={`获得 ${day.earn}`}
+                                />
+                                <div
+                                  className="w-2.5 rounded-t-sm bg-orange-400 transition-all"
+                                  style={{ height: `${spendH}%`, minHeight: day.spend > 0 ? '8px' : '0' }}
+                                  title={`消耗 ${day.spend}`}
+                                />
+                              </div>
+                              <div className="text-[10px] text-muted-foreground leading-none">{day.label}</div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                      <div className="flex items-center justify-center gap-4 mt-2 text-[10px] text-muted-foreground">
+                        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-green-400 inline-block" />获得</span>
+                        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-orange-400 inline-block" />消耗</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center text-sm text-muted-foreground py-4">
+                      暂无数据，开始记录后这里会显示趋势图
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useProfile } from '@/lib/hooks'
 import { seedDatabase } from '@/lib/seed'
-import { exportDatabase, importDatabase, updateProfile } from '@/lib/actions'
+import { exportDatabase, importDatabase, updateProfile, resetDatabase } from '@/lib/actions'
 import Link from 'next/link'
 
 export default function SettingsPage() {
@@ -73,6 +73,18 @@ export default function SettingsPage() {
     setMessage('资料已更新')
   }
 
+  const handleReset = async () => {
+    if (!confirm('⚠️ 确定要清空所有数据吗？\n\n所有积分记录、任务、奖励都将被删除，且无法恢复！\n\n建议先导出备份。')) return
+    if (!confirm('二次确认：真的要清空吗？此操作不可撤销！')) return
+    try {
+      await resetDatabase()
+      setMessage('数据已清空')
+      setTimeout(() => window.location.reload(), 500)
+    } catch (e) {
+      setMessage('重置失败: ' + (e instanceof Error ? e.message : '未知错误'))
+    }
+  }
+
   return (
     <div className="min-h-dvh pb-6">
       <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-sm border-b px-4 py-3">
@@ -120,6 +132,17 @@ export default function SettingsPage() {
               className="hidden"
               onChange={handleImport}
             />
+          </CardContent>
+        </Card>
+
+        {/* Danger zone */}
+        <Card className="border-red-200">
+          <CardContent className="pt-6 space-y-3">
+            <div className="font-medium mb-2 text-red-600">危险操作</div>
+            <p className="text-xs text-muted-foreground">清空所有积分记录、任务和奖励数据，建议先导出备份。</p>
+            <Button onClick={handleReset} className="w-full" variant="destructive">
+              重置所有数据
+            </Button>
           </CardContent>
         </Card>
 

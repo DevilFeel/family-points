@@ -129,3 +129,12 @@ export async function importDatabase(json: string) {
     if (data.rewards?.length) await db.rewards.bulkAdd(data.rewards)
   })
 }
+
+export async function resetDatabase() {
+  await db.transaction('rw', [db.profiles, db.tasks, db.logs, db.rewards], async () => {
+    await db.profiles.clear()
+    await db.tasks.clear()
+    await db.logs.clear()
+    await db.rewards.clear()
+  })
+}
