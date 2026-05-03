@@ -40,6 +40,7 @@ export default function ChildDashboard() {
   const tasks = useTasks()
   const rewards = useAllRewards()
 
+
   useEffect(() => {
     seedDatabase().then(() => setMounted(true))
   }, [])
@@ -83,7 +84,7 @@ export default function ChildDashboard() {
   const enabledRewards = rewards?.filter(r => r.enabled) ?? []
 
   return (
-    <div className="min-h-dvh flex flex-col px-4 pt-4 pb-20 relative overflow-y-auto bg-white">
+    <div className="min-h-dvh flex flex-col px-4 pt-4 pb-20 relative overflow-y-auto overflow-x-hidden bg-white max-w-full box-border">
       {/* Feedback animation */}
       <AnimatePresence>
         {feedback && (
@@ -105,7 +106,7 @@ export default function ChildDashboard() {
       </AnimatePresence>
 
       {/* Top: score - blue hero area */}
-      <div className={`flex-shrink-0 rounded-2xl px-5 py-5 text-white -mx-4 px-4 mb-4 ${balance < 0 ? 'bg-red-500' : 'bg-blue-500'}`}>
+      <div className={`flex-shrink-0 rounded-2xl px-4 py-5 text-white -mx-4 mb-4 ${balance < 0 ? 'bg-red-500' : 'bg-blue-500'}`}>
         <div className="flex items-center justify-between">
           <div className="text-lg font-bold">{name}的积分</div>
           <Link
@@ -166,16 +167,16 @@ export default function ChildDashboard() {
             setCustomAddAmount(false)
             ;(document.activeElement as HTMLElement)?.blur()
           }}
-          className="flex gap-2"
+          className="flex flex-wrap gap-2 items-center"
         >
           <input
             name="reason"
             placeholder="输入做了什么..."
-            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+            className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
           />
           <select
             name="amount"
-            className="rounded-lg border border-gray-200 px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-400"
+            className="rounded-lg border border-gray-200 px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-400 shrink-0"
             onChange={(e) => setCustomAddAmount(e.target.value === 'custom')}
           >
             <option value="1">+1</option>
@@ -191,7 +192,7 @@ export default function ChildDashboard() {
               type="number"
               min="1"
               placeholder="分值"
-              className="w-16 rounded-lg border border-gray-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+              className="w-16 rounded-lg border border-gray-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 shrink-0"
             />
           )}
           <Button type="submit" size="sm" className="px-4 shrink-0 bg-green-500 hover:bg-green-600 text-white">
@@ -220,16 +221,16 @@ export default function ChildDashboard() {
             setCustomDeductAmount(false)
             ;(document.activeElement as HTMLElement)?.blur()
           }}
-          className="flex gap-2"
+          className="flex flex-wrap gap-2 items-center"
         >
           <input
             name="reason"
             placeholder="输入扣分原因..."
-            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+            className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
           />
           <select
             name="amount"
-            className="rounded-lg border border-gray-200 px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-400"
+            className="rounded-lg border border-gray-200 px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-400 shrink-0"
             onChange={(e) => setCustomDeductAmount(e.target.value === 'custom')}
           >
             <option value="1">-1</option>
@@ -245,7 +246,7 @@ export default function ChildDashboard() {
               type="number"
               min="1"
               placeholder="分值"
-              className="w-16 rounded-lg border border-gray-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+              className="w-16 rounded-lg border border-gray-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 shrink-0"
             />
           )}
           <Button type="submit" size="sm" className="px-4 shrink-0 bg-red-500 hover:bg-red-600 text-white">

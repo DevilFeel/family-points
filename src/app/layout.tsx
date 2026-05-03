@@ -49,7 +49,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="font-sans antialiased min-h-dvh bg-gray-50">
+      <body className="font-sans antialiased min-h-dvh bg-gray-50 overflow-x-hidden">
         {children}
       </body>
     </html>
