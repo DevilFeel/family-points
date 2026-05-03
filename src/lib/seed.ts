@@ -25,18 +25,32 @@ const DEFAULT_PROFILE: Omit<Profile, 'id'> = {
 }
 
 export async function seedDatabase() {
-  const profileCount = await db.profiles.count()
-  if (profileCount === 0) {
-    await db.profiles.add(DEFAULT_PROFILE)
-  }
+  try {
+    const profileCount = await db.profiles.count()
+    if (profileCount === 0) {
+      await db.profiles.add(DEFAULT_PROFILE)
+    }
 
-  const taskCount = await db.tasks.count()
-  if (taskCount === 0) {
-    await db.tasks.bulkAdd(DEFAULT_TASKS)
-  }
+    const taskCount = await db.tasks.count()
+    if (taskCount === 0) {
+      await db.tasks.bulkAdd(DEFAULT_TASKS)
+    }
 
-  const rewardCount = await db.rewards.count()
-  if (rewardCount === 0) {
-    await db.rewards.bulkAdd(DEFAULT_REWARDS)
+    const rewardCount = await db.rewards.count()
+    if (rewardCount === 0) {
+      await db.rewards.bulkAdd(DEFAULT_REWARDS)
+    }
+  } catch (e) {
+    console.error('seedDatabase error:', e)
+    // If DB is corrupted, try to recover by deleting and re-opening
+    try {
+      await db.delete()
+      await db.open()
+      await db.profiles.add(DEFAULT_PROFILE)
+      await db.tasks.bulkAdd(DEFAULT_TASKS)
+      await db.rewards.bulkAdd(DEFAULT_REWARDS)
+    } catch (e2) {
+      console.error('seedDatabase recovery failed:', e2)
+    }
   }
 }

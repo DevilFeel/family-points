@@ -33,7 +33,16 @@ export default function RootLayout({
             __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js');
+                  navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                    reg.addEventListener('updatefound', function() {
+                      var newWorker = reg.installing;
+                      newWorker.addEventListener('statechange', function() {
+                        if (newWorker.state === 'activated') {
+                          window.location.reload();
+                        }
+                      });
+                    });
+                  });
                 });
               }
             `,
