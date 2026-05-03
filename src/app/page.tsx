@@ -243,7 +243,10 @@ export default function ChildDashboard() {
                       <CardContent className="flex items-center justify-between py-2.5">
                         <div className="flex items-center gap-2">
                           <span className="text-xl">{reward.icon}</span>
-                          <span className="text-sm font-medium">{reward.title}</span>
+                          <div>
+                            <span className="text-sm font-medium">{reward.title}</span>
+                            <span className="text-xs text-purple-500 ml-1.5">{reward.cost}分</span>
+                          </div>
                         </div>
                         <Button
                           size="sm"
