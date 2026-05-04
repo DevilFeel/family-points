@@ -37,6 +37,16 @@ export function useTodayLogs() {
   })
 }
 
+export function useTotalStats() {
+  return useLiveQuery(async () => {
+    const allLogs = await db.logs.toArray()
+    const earn = allLogs.filter(l => l.amount > 0).reduce((s, l) => s + l.amount, 0)
+    const spend = allLogs.filter(l => l.amount < 0).reduce((s, l) => s + Math.abs(l.amount), 0)
+    const total = allLogs.length
+    return { earn, spend, total }
+  })
+}
+
 export function useTodayStats() {
   return useLiveQuery(async () => {
     const startOfDay = new Date()

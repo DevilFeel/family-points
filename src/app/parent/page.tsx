@@ -1,14 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useProfile, useTasks, useAllRewards, useLogs, useTodayStats, useWeeklyStats } from '@/lib/hooks'
+import { useProfile, useTasks, useAllRewards, useLogs, useTodayStats, useWeeklyStats, useTotalStats } from '@/lib/hooks'
 import { seedDatabase } from '@/lib/seed'
 import { redeemReward, addTask, updateTask, deleteTask, addReward, deleteReward, deleteLog } from '@/lib/actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { EmojiPicker } from '@/components/EmojiPicker'
@@ -19,6 +18,7 @@ export default function ParentPage() {
   const [feedback, setFeedback] = useState<{ text: string; points: number } | null>(null)
   const [editingTask, setEditingTask] = useState<{ id: number; title: string; points: number; icon: string } | null>(null)
   const [editingIcon, setEditingIcon] = useState('⭐')
+  const [logLimit, setLogLimit] = useState(20)
 
   useEffect(() => {
     seedDatabase().then(() => setMounted(true))
@@ -27,7 +27,8 @@ export default function ParentPage() {
   const profile = useProfile()
   const tasks = useTasks()
   const rewards = useAllRewards()
-  const logs = useLogs()
+  const logs = useLogs(logLimit)
+  const totalStats = useTotalStats()
   const todayStats = useTodayStats()
   const weeklyStats = useWeeklyStats()
 
@@ -222,6 +223,27 @@ export default function ParentPage() {
 
           {/* Activity log */}
           <TabsContent value="log" className="mt-4">
+            {/* Total stats */}
+            {totalStats && (
+              <Card className="mb-3">
+                <CardContent className="flex items-center justify-around py-3">
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-green-600">+{totalStats.earn}</div>
+                    <div className="text-xs text-muted-foreground">累计获得</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-red-500">-{totalStats.spend}</div>
+                    <div className="text-xs text-muted-foreground">累计消耗</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-blue-600">{totalStats.total}</div>
+                    <div className="text-xs text-muted-foreground">操作次数</div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Today stats */}
             {todayStats && (
               <Card className="mb-3">
                 <CardContent className="flex items-center justify-around py-3">
@@ -285,38 +307,64 @@ export default function ParentPage() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Log list with infinite scroll */}
             <div className="space-y-2">
-              {logs?.map((log) => (
-                <Card key={log.id}>
-                  <CardContent className="flex items-center justify-between py-2">
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">{log.reason}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(log.timestamp).toLocaleString('zh-CN')}
+              {logs?.map((log) => {
+                const isEarn = log.amount >= 0
+                return (
+                  <Card key={log.id} className={isEarn ? 'border-green-200 bg-green-50/50' : 'border-red-200 bg-red-50/50'}>
+                    <CardContent className="flex items-center justify-between py-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{log.reason}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(log.timestamp).toLocaleString('zh-CN')}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={log.amount >= 0 ? 'default' : 'destructive'}>
-                        {log.amount >= 0 ? '+' : ''}{log.amount}
-                      </Badge>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                        onClick={async () => {
-                          if (confirm(`确定删除这条记录吗？\n${log.reason} ${log.amount >= 0 ? '+' : ''}${log.amount}分`)) {
-                            await deleteLog(log.id!)
-                          }
-                        }}
-                      >
-                        删除
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        <span className={`text-sm font-bold tabular-nums ${isEarn ? 'text-green-600' : 'text-red-500'}`}>
+                          {isEarn ? '+' : ''}{log.amount}分
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-gray-400 hover:text-red-500 hover:bg-red-50 h-7 w-7 p-0"
+                          onClick={async () => {
+                            if (confirm(`确定删除这条记录吗？\n${log.reason} ${log.amount >= 0 ? '+' : ''}${log.amount}分`)) {
+                              await deleteLog(log.id!)
+                            }
+                          }}
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
               {(!logs || logs.length === 0) && (
                 <div className="text-center text-muted-foreground py-8">暂无记录</div>
+              )}
+              {/* Infinite scroll trigger */}
+              {logs && logs.length >= logLimit && (
+                <div
+                  ref={(el) => {
+                    if (!el) return
+                    const observer = new IntersectionObserver(
+                      ([entry]) => {
+                        if (entry.isIntersecting) {
+                          setLogLimit((prev) => prev + 20)
+                        }
+                      },
+                      { threshold: 0.1 }
+                    )
+                    observer.observe(el)
+                    return () => observer.disconnect()
+                  }}
+                  className="text-center text-xs text-muted-foreground py-3"
+                >
+                  加载中...
+                </div>
               )}
             </div>
           </TabsContent>
