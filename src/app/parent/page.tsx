@@ -1,17 +1,21 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { useProfile, useTasks, useAllRewards, useLogs, useTodayStats, useWeeklyStats, useTotalStats } from '@/lib/hooks'
-import { seedDatabase } from '@/lib/seed'
-import { redeemReward, addTask, updateTask, deleteTask, addReward, deleteReward, deleteLog } from '@/lib/actions'
+import Link from 'next/link'
+import { useCallback, useEffect, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { FeedbackToast } from '@/components/FeedbackToast'
+import { LogList } from '@/components/LogList'
+import { RewardFormDialog } from '@/components/RewardFormDialog'
+import { TaskFormDialog } from '@/components/TaskFormDialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { motion, AnimatePresence } from 'framer-motion'
 import { EmojiPicker } from '@/components/EmojiPicker'
-import Link from 'next/link'
+import { addReward, addTask, deleteLog, deleteReward, deleteTask, redeemReward, updateTask } from '@/lib/actions'
+import { useAllRewards, useLogs, useProfile, useTasks, useTodayStats, useTotalStats, useWeeklyStats } from '@/lib/hooks'
+import { seedDatabase } from '@/lib/seed'
 
 export default function ParentPage() {
   const [mounted, setMounted] = useState(false)
@@ -38,83 +42,68 @@ export default function ParentPage() {
 
   useEffect(() => {
     if (!feedback) return
-    const t = setTimeout(() => setFeedback(null), 1200)
-    return () => clearTimeout(t)
+    const timeout = setTimeout(() => setFeedback(null), 1200)
+    return () => clearTimeout(timeout)
   }, [feedback])
 
   const handleRedeem = async (rewardId: number, title: string, cost: number) => {
     const ok = await redeemReward(rewardId)
     if (ok) {
-      showFeedback(`兑换: ${title}`, -cost)
+      showFeedback(`兑换：${title}`, -cost)
     }
   }
 
   if (!mounted) {
-    return <div className="min-h-dvh flex items-center justify-center text-blue-600">加载中...</div>
+    return <div className="flex min-h-dvh items-center justify-center text-blue-600">加载中...</div>
   }
 
   return (
-    <div className="min-h-dvh pb-6 bg-white">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-blue-600 text-white px-4 py-3 shadow-md">
+    <div className="min-h-dvh bg-white pb-6">
+      <div className="sticky top-0 z-40 bg-blue-600 px-4 py-3 text-white shadow-md">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/" className="text-xl text-white font-bold">←</Link>
+            <Link href="/" className="text-xl font-bold text-white">
+              ←
+            </Link>
             <div>
-              <div className="font-bold text-lg">家长管理</div>
+              <div className="text-lg font-bold">家长管理</div>
               <div className="text-sm text-blue-200">
                 {profile?.name}: {profile?.balance ?? 0} 分
               </div>
             </div>
           </div>
           <Link href="/settings">
-            <Button variant="ghost" size="sm" className="text-blue-100 hover:text-white hover:bg-blue-700">设置</Button>
+            <Button variant="ghost" size="sm" className="text-blue-100 hover:bg-blue-700 hover:text-white">
+              设置
+            </Button>
           </Link>
         </div>
       </div>
 
-      {/* Feedback animation */}
-      <AnimatePresence>
-        {feedback && (
-          <motion.div
-            initial={{ opacity: 0, y: 0, scale: 0.8 }}
-            animate={{ opacity: 1, y: -20, scale: 1 }}
-            exit={{ opacity: 0, y: -40, scale: 1.2 }}
-            className="fixed top-1/3 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
-          >
-            <div className={`text-3xl font-bold px-6 py-3 rounded-2xl shadow-lg ${
-              feedback.points >= 0
-                ? 'bg-green-500 text-white'
-                : 'bg-red-500 text-white'
-            }`}>
-              {feedback.points >= 0 ? '+' : ''}{feedback.points} {feedback.text}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <FeedbackToast feedback={feedback} topClassName="top-1/3" />
 
-      {/* Edit task modal */}
       <AnimatePresence>
         {editingTask && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
             onClick={() => setEditingTask(null)}
           >
             <motion.div
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.9 }}
-              className="bg-white rounded-xl p-6 w-full max-w-sm max-h-[90vh] overflow-y-auto space-y-4"
-              onClick={(e) => e.stopPropagation()}
+              className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-xl bg-white p-6"
+              onClick={(event) => event.stopPropagation()}
             >
-              <div className="font-bold text-lg">编辑任务</div>
+              <div className="text-lg font-bold">编辑任务</div>
               <form
-                onSubmit={async (e) => {
-                  e.preventDefault()
-                  const form = new FormData(e.currentTarget)
+                className="space-y-3"
+                onSubmit={async (event) => {
+                  event.preventDefault()
+                  const form = new FormData(event.currentTarget)
                   await updateTask(editingTask.id, {
                     title: form.get('title') as string,
                     points: 1,
@@ -122,7 +111,6 @@ export default function ParentPage() {
                   })
                   setEditingTask(null)
                 }}
-                className="space-y-3"
               >
                 <div>
                   <Label>任务名称</Label>
@@ -130,7 +118,10 @@ export default function ParentPage() {
                 </div>
                 <EmojiPicker value={editingIcon} onChange={setEditingIcon} />
                 <div className="flex gap-2">
-                  <Button type="button" variant="destructive" className="flex-1"
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="flex-1"
                     onClick={async () => {
                       await deleteTask(editingTask.id)
                       setEditingTask(null)
@@ -138,7 +129,9 @@ export default function ParentPage() {
                   >
                     删除
                   </Button>
-                  <Button type="submit" className="flex-1">保存</Button>
+                  <Button type="submit" className="flex-1">
+                    保存
+                  </Button>
                 </div>
               </form>
             </motion.div>
@@ -146,15 +139,14 @@ export default function ParentPage() {
         )}
       </AnimatePresence>
 
-      <div className="px-4 mt-4">
+      <div className="mt-4 px-4">
         <Tabs defaultValue="tasks">
-          <TabsList className="w-full grid grid-cols-3 bg-gray-100">
+          <TabsList className="grid w-full grid-cols-3 bg-gray-100">
             <TabsTrigger value="tasks">任务</TabsTrigger>
             <TabsTrigger value="rewards">奖励</TabsTrigger>
             <TabsTrigger value="log">记录</TabsTrigger>
           </TabsList>
 
-          {/* Task management list */}
           <TabsContent value="tasks" className="mt-4">
             <div className="space-y-2">
               {tasks?.map((task) => (
@@ -162,9 +154,7 @@ export default function ParentPage() {
                   <CardContent className="flex items-center justify-between py-3">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{task.icon}</span>
-                      <div>
-                        <div className="font-medium">{task.title}</div>
-                      </div>
+                      <div className="font-medium">{task.title}</div>
                     </div>
                     <Button
                       size="sm"
@@ -184,7 +174,6 @@ export default function ParentPage() {
             <TaskFormDialog onAdd={addTask} count={tasks?.length ?? 0} />
           </TabsContent>
 
-          {/* Rewards */}
           <TabsContent value="rewards" className="mt-4">
             <div className="space-y-3">
               {rewards?.map((reward) => (
@@ -198,11 +187,7 @@ export default function ParentPage() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => deleteReward(reward.id!)}
-                      >
+                      <Button size="sm" variant="outline" onClick={() => deleteReward(reward.id!)}>
                         删除
                       </Button>
                       <Button
@@ -221,9 +206,7 @@ export default function ParentPage() {
             <RewardFormDialog onAdd={addReward} />
           </TabsContent>
 
-          {/* Activity log */}
           <TabsContent value="log" className="mt-4">
-            {/* Total stats */}
             {totalStats && (
               <Card className="mb-3">
                 <CardContent className="flex items-center justify-around py-3">
@@ -233,7 +216,7 @@ export default function ParentPage() {
                   </div>
                   <div className="text-center">
                     <div className="text-lg font-bold text-red-500">-{totalStats.spend}</div>
-                    <div className="text-xs text-muted-foreground">累计消耗</div>
+                    <div className="text-xs text-muted-foreground">累计消费</div>
                   </div>
                   <div className="text-center">
                     <div className="text-lg font-bold text-blue-600">{totalStats.total}</div>
@@ -243,7 +226,6 @@ export default function ParentPage() {
               </Card>
             )}
 
-            {/* Today stats */}
             {todayStats && (
               <Card className="mb-3">
                 <CardContent className="flex items-center justify-around py-3">
@@ -253,7 +235,7 @@ export default function ParentPage() {
                   </div>
                   <div className="text-center">
                     <div className="text-lg font-bold text-red-500">-{todayStats.spend}</div>
-                    <div className="text-xs text-muted-foreground">今日消耗</div>
+                    <div className="text-xs text-muted-foreground">今日消费</div>
                   </div>
                   <div className="text-center">
                     <div className="text-lg font-bold text-blue-600">{todayStats.count}</div>
@@ -263,227 +245,67 @@ export default function ParentPage() {
               </Card>
             )}
 
-            {/* Weekly trend chart */}
             {weeklyStats && (
               <Card className="mb-3">
-                <CardContent className="pt-4 pb-3">
-                  <div className="text-sm font-semibold text-gray-700 mb-3">近7天趋势</div>
-                  {weeklyStats.some(d => d.earn > 0 || d.spend > 0) ? (
+                <CardContent className="pb-3 pt-4">
+                  <div className="mb-3 text-sm font-semibold text-gray-700">近 7 天趋势</div>
+                  {weeklyStats.some((day) => day.earn > 0 || day.spend > 0) ? (
                     <>
-                      <div className="flex items-end gap-1.5 h-24">
-                        {weeklyStats.map((day, i) => {
-                          const maxVal = Math.max(...weeklyStats.map(d => Math.max(d.earn, d.spend)), 1)
-                          const earnH = Math.max((day.earn / maxVal) * 100, day.earn > 0 ? 12 : 0)
-                          const spendH = Math.max((day.spend / maxVal) * 100, day.spend > 0 ? 12 : 0)
+                      <div className="flex h-24 items-end gap-1.5">
+                        {weeklyStats.map((day) => {
+                          const maxValue = Math.max(...weeklyStats.map((item) => Math.max(item.earn, item.spend)), 1)
+                          const earnHeight = Math.max((day.earn / maxValue) * 100, day.earn > 0 ? 12 : 0)
+                          const spendHeight = Math.max((day.spend / maxValue) * 100, day.spend > 0 ? 12 : 0)
                           return (
-                            <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                              <div className="flex items-end gap-0.5 w-full justify-center" style={{ height: '72px' }}>
+                            <div key={day.date} className="flex flex-1 flex-col items-center gap-1">
+                              <div className="flex w-full items-end justify-center gap-0.5" style={{ height: '72px' }}>
                                 <div
                                   className="w-2.5 rounded-t-sm bg-green-400 transition-all"
-                                  style={{ height: `${earnH}%`, minHeight: day.earn > 0 ? '8px' : '0' }}
+                                  style={{ height: `${earnHeight}%`, minHeight: day.earn > 0 ? '8px' : '0' }}
                                   title={`获得 ${day.earn}`}
                                 />
                                 <div
                                   className="w-2.5 rounded-t-sm bg-red-400 transition-all"
-                                  style={{ height: `${spendH}%`, minHeight: day.spend > 0 ? '8px' : '0' }}
-                                  title={`消耗 ${day.spend}`}
+                                  style={{ height: `${spendHeight}%`, minHeight: day.spend > 0 ? '8px' : '0' }}
+                                  title={`消费 ${day.spend}`}
                                 />
                               </div>
-                              <div className="text-[10px] text-muted-foreground leading-none">{day.label}</div>
+                              <div className="text-[10px] leading-none text-muted-foreground">{day.label}</div>
                             </div>
                           )
                         })}
                       </div>
-                      <div className="flex items-center justify-center gap-4 mt-2 text-[10px] text-muted-foreground">
-                        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-green-400 inline-block" />获得</span>
-                        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-red-400 inline-block" />消耗</span>
+                      <div className="mt-2 flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-green-400" />
+                          获得
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-red-400" />
+                          消费
+                        </span>
                       </div>
                     </>
                   ) : (
-                    <div className="text-center text-sm text-muted-foreground py-4">
-                      暂无数据，开始记录后这里会显示趋势图
-                    </div>
+                    <div className="py-4 text-center text-sm text-muted-foreground">暂无数据，开始记录后这里会显示趋势图</div>
                   )}
                 </CardContent>
               </Card>
             )}
 
-            {/* Log list with infinite scroll */}
-            <div className="space-y-2">
-              {logs?.map((log) => {
-                const isEarn = log.amount >= 0
-                return (
-                  <Card key={log.id} className={isEarn ? 'border-green-200 bg-green-50/50' : 'border-red-200 bg-red-50/50'}>
-                    <CardContent className="flex items-center justify-between py-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{log.reason}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(log.timestamp).toLocaleString('zh-CN')}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0 ml-2">
-                        <span className={`text-sm font-bold tabular-nums ${isEarn ? 'text-green-600' : 'text-red-500'}`}>
-                          {isEarn ? '+' : ''}{log.amount}分
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-gray-400 hover:text-red-500 hover:bg-red-50 h-7 w-7 p-0"
-                          onClick={async () => {
-                            if (confirm(`确定删除这条记录吗？\n${log.reason} ${log.amount >= 0 ? '+' : ''}${log.amount}分`)) {
-                              await deleteLog(log.id!)
-                            }
-                          }}
-                        >
-                          ×
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-              {(!logs || logs.length === 0) && (
-                <div className="text-center text-muted-foreground py-8">暂无记录</div>
-              )}
-              {/* Infinite scroll trigger */}
-              {logs && logs.length >= logLimit && (
-                <div
-                  ref={(el) => {
-                    if (!el) return
-                    const observer = new IntersectionObserver(
-                      ([entry]) => {
-                        if (entry.isIntersecting) {
-                          setLogLimit((prev) => prev + 20)
-                        }
-                      },
-                      { threshold: 0.1 }
-                    )
-                    observer.observe(el)
-                    return () => observer.disconnect()
-                  }}
-                  className="text-center text-xs text-muted-foreground py-3"
-                >
-                  加载中...
-                </div>
-              )}
-            </div>
+            <LogList
+              logs={logs}
+              canLoadMore={Boolean(logs && logs.length >= logLimit)}
+              onLoadMore={() => setLogLimit((current) => current + 20)}
+              onDelete={async (log) => {
+                if (window.confirm(`确定删除这条记录吗？\n${log.reason} ${log.amount >= 0 ? '+' : ''}${log.amount}分`)) {
+                  await deleteLog(log.id!)
+                }
+              }}
+            />
           </TabsContent>
         </Tabs>
       </div>
     </div>
-  )
-}
-
-function TaskFormDialog({ onAdd, count }: { onAdd: (data: { title: string; points: number; icon: string; sortOrder: number }) => Promise<number | undefined>, count: number }) {
-  const [open, setOpen] = useState(false)
-  const [icon, setIcon] = useState('⭐')
-
-  return (
-    <>
-      <Button variant="outline" className="w-full mt-4" onClick={() => { setIcon('⭐'); setOpen(true) }}>
-        + 添加任务
-      </Button>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
-            onClick={() => setOpen(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="bg-white rounded-xl p-6 w-full max-w-sm max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="font-bold text-lg mb-4">添加任务</div>
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault()
-                  const form = new FormData(e.currentTarget)
-                  await onAdd({
-                    title: form.get('title') as string,
-                    points: 1,
-                    icon,
-                    sortOrder: count,
-                  })
-                  setOpen(false)
-                }}
-                className="space-y-3"
-              >
-                <div>
-                  <Label>任务名称</Label>
-                  <Input name="title" required />
-                </div>
-                <EmojiPicker value={icon} onChange={setIcon} />
-                <Button type="submit" className="w-full">添加</Button>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
-  )
-}
-
-function RewardFormDialog({ onAdd }: { onAdd: (data: { title: string; cost: number; icon: string; enabled: boolean }) => Promise<number | undefined> }) {
-  const [open, setOpen] = useState(false)
-  const [icon, setIcon] = useState('🎁')
-
-  return (
-    <>
-      <Button variant="outline" className="w-full mt-4" onClick={() => { setIcon('🎁'); setOpen(true) }}>
-        + 添加奖励
-      </Button>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
-            onClick={() => setOpen(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="bg-white rounded-xl p-6 w-full max-w-sm max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="font-bold text-lg mb-4">添加奖励</div>
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault()
-                  const form = new FormData(e.currentTarget)
-                  await onAdd({
-                    title: form.get('title') as string,
-                    cost: Number(form.get('cost')) || 10,
-                    icon,
-                    enabled: true,
-                  })
-                  setOpen(false)
-                }}
-                className="space-y-3"
-              >
-                <div>
-                  <Label>奖励名称</Label>
-                  <Input name="title" required />
-                </div>
-                <div>
-                  <Label>所需积分</Label>
-                  <Input type="number" name="cost" defaultValue={10} min={1} required />
-                </div>
-                <EmojiPicker value={icon} onChange={setIcon} />
-                <Button type="submit" className="w-full">添加</Button>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
   )
 }

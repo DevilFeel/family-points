@@ -1,36 +1,52 @@
-import { db } from './db'
+import { db, type Log, type Profile, type Reward, type Task } from './db'
+
+async function getCurrentProfile() {
+  return db.profiles.toCollection().first()
+}
+
+async function requireCurrentProfile() {
+  const profile = await getCurrentProfile()
+  if (!profile?.id) {
+    throw new Error('未找到当前孩子资料')
+  }
+
+  return profile
+}
+
+async function writeBalanceAndLog(profile: Profile, log: Omit<Log, 'id' | 'profileId' | 'timestamp'>) {
+  await db.profiles.update(profile.id!, { balance: profile.balance + log.amount })
+  await db.logs.add({
+    profileId: profile.id!,
+    amount: log.amount,
+    reason: log.reason,
+    type: log.type,
+    timestamp: Date.now(),
+  })
+}
 
 export async function addPoints(taskId: number) {
   const task = await db.tasks.get(taskId)
   if (!task) return
 
   await db.transaction('rw', [db.profiles, db.logs], async () => {
-    const profile = await db.profiles.toCollection().first()
-    if (!profile?.id) return
-    await db.profiles.update(profile.id, { balance: profile.balance + task.points })
-    await db.logs.add({
-      profileId: profile.id,
+    const profile = await requireCurrentProfile()
+    await writeBalanceAndLog(profile, {
       amount: task.points,
       reason: task.title,
       type: 'earn',
-      timestamp: Date.now(),
     })
   })
 }
 
 export async function manualAdjust(amount: number, reason: string, type: 'manual' | 'deduct') {
-  const finalAmount = type === 'deduct' ? -Math.abs(amount) : amount
+  const finalAmount = type === 'deduct' ? -Math.abs(amount) : Math.abs(amount)
 
   await db.transaction('rw', [db.profiles, db.logs], async () => {
-    const profile = await db.profiles.toCollection().first()
-    if (!profile?.id) return
-    await db.profiles.update(profile.id, { balance: profile.balance + finalAmount })
-    await db.logs.add({
-      profileId: profile.id,
+    const profile = await requireCurrentProfile()
+    await writeBalanceAndLog(profile, {
       amount: finalAmount,
       reason,
       type,
-      timestamp: Date.now(),
     })
   })
 }
@@ -40,35 +56,30 @@ export async function redeemReward(rewardId: number, allowNegative = false) {
   if (!reward) return false
 
   return db.transaction('rw', [db.profiles, db.logs], async () => {
-    const profile = await db.profiles.toCollection().first()
-    if (!profile?.id) return false
+    const profile = await requireCurrentProfile()
     if (!allowNegative && profile.balance < reward.cost) return false
-    await db.profiles.update(profile.id, { balance: profile.balance - reward.cost })
-    await db.logs.add({
-      profileId: profile.id,
+
+    await writeBalanceAndLog(profile, {
       amount: -reward.cost,
-      reason: `兑换: ${reward.title}`,
+      reason: `兑换：${reward.title}`,
       type: 'redeem',
-      timestamp: Date.now(),
     })
+
     return true
   })
 }
 
-export async function updateProfile(data: Partial<{
-  name: string
-  balance: number
-}>) {
-  const profile = await db.profiles.toCollection().first()
+export async function updateProfile(data: Partial<Pick<Profile, 'name' | 'balance'>>) {
+  const profile = await getCurrentProfile()
   if (!profile?.id) return
   await db.profiles.update(profile.id, data)
 }
 
-export async function updateTask(id: number, data: Partial<{ title: string; points: number; icon: string; sortOrder: number }>) {
+export async function updateTask(id: number, data: Partial<Pick<Task, 'title' | 'points' | 'icon' | 'sortOrder'>>) {
   await db.tasks.update(id, data)
 }
 
-export async function addTask(data: Omit<{ title: string; points: number; icon: string; sortOrder: number }, 'id'>) {
+export async function addTask(data: Omit<Task, 'id'>) {
   return db.tasks.add(data)
 }
 
@@ -76,7 +87,7 @@ export async function deleteTask(id: number) {
   await db.tasks.delete(id)
 }
 
-export async function addReward(data: Omit<{ title: string; cost: number; icon: string; enabled: boolean }, 'id'>) {
+export async function addReward(data: Omit<Reward, 'id'>) {
   return db.rewards.add(data)
 }
 
@@ -89,14 +100,8 @@ export async function deleteLog(id: number) {
   if (!log) return
 
   await db.transaction('rw', [db.profiles, db.logs], async () => {
-    const profile = await db.profiles.toCollection().first()
-    if (!profile?.id) return
-
-    // 删除记录时，积分要反向调整
-    // 如果是加分记录（amount > 0），删除后需要减掉这些积分
-    // 如果是扣分记录（amount < 0），删除后需要加回这些积分
-    const balanceAdjustment = -log.amount
-    await db.profiles.update(profile.id, { balance: profile.balance + balanceAdjustment })
+    const profile = await requireCurrentProfile()
+    await db.profiles.update(profile.id!, { balance: profile.balance - log.amount })
     await db.logs.delete(id)
   })
 }
@@ -110,6 +115,7 @@ export async function exportDatabase() {
     exportedAt: new Date().toISOString(),
     version: 1,
   }
+
   return JSON.stringify(data, null, 2)
 }
 
@@ -118,6 +124,7 @@ export async function importDatabase(json: string) {
   if (!data.version || !Array.isArray(data.profiles)) {
     throw new Error('无效的备份文件')
   }
+
   await db.transaction('rw', [db.profiles, db.tasks, db.logs, db.rewards], async () => {
     await db.profiles.clear()
     await db.tasks.clear()

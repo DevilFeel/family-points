@@ -1,29 +1,29 @@
-import type { Metadata, Viewport } from "next";
-import "./globals.css";
+import type { Metadata, Viewport } from 'next'
+import './globals.css'
 
 export const metadata: Metadata = {
-  title: "Family Points",
-  description: "家庭积分激励系统",
-  manifest: "/manifest.json",
+  title: 'Family Points',
+  description: '家庭积分激励小应用',
+  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
-    title: "Family Points",
+    statusBarStyle: 'default',
+    title: 'Family Points',
   },
-};
+}
 
 export const viewport: Viewport = {
-  width: "device-width",
+  width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#3b82f6",
-};
+  themeColor: '#3b82f6',
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <html lang="zh-CN">
@@ -49,9 +49,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="font-sans antialiased min-h-dvh bg-gray-50 overflow-x-hidden">
-        {children}
-      </body>
+      <body className="min-h-dvh bg-gray-50 font-sans antialiased">{children}</body>
     </html>
-  );
+  )
 }

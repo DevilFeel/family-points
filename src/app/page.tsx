@@ -1,28 +1,28 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
-import { motion, useSpring, useTransform, AnimatePresence } from 'framer-motion'
-import { useProfile, useTasks, useAllRewards, useTodayLogs } from '@/lib/hooks'
-import { seedDatabase } from '@/lib/seed'
-import { addPoints, redeemReward, manualAdjust } from '@/lib/actions'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion, useSpring, useTransform } from 'framer-motion'
+import { FeedbackToast } from '@/components/FeedbackToast'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { addPoints, manualAdjust, redeemReward } from '@/lib/actions'
+import { useEnabledRewards, useProfile, useTasks, useTodayLogs } from '@/lib/hooks'
+import { seedDatabase } from '@/lib/seed'
 
 function AnimatedNumber({ value }: { value: number }) {
   const spring = useSpring(0, { stiffness: 100, damping: 30 })
-  const display = useTransform(spring, (v) => Math.round(v))
+  const display = useTransform(spring, (current) => Math.round(current))
+  const [text, setText] = useState('0')
+  const unsubscribeRef = useRef<() => void>()
 
   useEffect(() => {
     spring.set(value)
   }, [spring, value])
 
-  const [text, setText] = useState('0')
-  const unsubscribeRef = useRef<() => void>()
-
   useEffect(() => {
-    unsubscribeRef.current = display.on('change', (v) => {
-      setText(String(v))
+    unsubscribeRef.current = display.on('change', (current) => {
+      setText(String(current))
     })
     return () => unsubscribeRef.current?.()
   }, [display])
@@ -38,9 +38,8 @@ export default function ChildDashboard() {
   const [customDeductAmount, setCustomDeductAmount] = useState(false)
   const profile = useProfile()
   const tasks = useTasks()
-  const rewards = useAllRewards()
+  const rewards = useEnabledRewards()
   const todayLogs = useTodayLogs()
-
 
   useEffect(() => {
     seedDatabase().then(() => setMounted(true))
@@ -52,12 +51,12 @@ export default function ChildDashboard() {
 
   useEffect(() => {
     if (!feedback) return
-    const t = setTimeout(() => setFeedback(null), 1200)
-    return () => clearTimeout(t)
+    const timeout = setTimeout(() => setFeedback(null), 1200)
+    return () => clearTimeout(timeout)
   }, [feedback])
 
   const handleAddPoints = async (taskId: number, title: string) => {
-    if (!confirm(`确认加分：${title} +1分？`)) return
+    if (!window.confirm(`确认加分：${title} +1 分？`)) return
     await addPoints(taskId)
     showFeedback(title, 1)
   }
@@ -65,82 +64,70 @@ export default function ChildDashboard() {
   const handleRedeem = async (rewardId: number, title: string, cost: number) => {
     const currentBalance = profile?.balance ?? 0
     if (currentBalance >= cost) {
-      if (!confirm('确认兑换: ' + title + ' -' + cost + '分?')) return
+      if (!window.confirm(`确认兑换：${title} -${cost} 分？`)) return
     } else {
       const diff = cost - currentBalance
-      if (!confirm('当前 ' + currentBalance + ' 分, 兑换 ' + title + ' 需要 ' + cost + ' 分\n将欠 ' + diff + ' 分(积分变负, 后续加分补回)\n\n确认兑换?')) return
+      if (
+        !window.confirm(
+          `当前只有 ${currentBalance} 分，兑换 ${title} 需要 ${cost} 分。\n将先欠 ${diff} 分，后续可继续补回。\n\n确认兑换吗？`,
+        )
+      ) {
+        return
+      }
     }
+
     const ok = await redeemReward(rewardId, true)
     if (ok) {
-      showFeedback('兑换: ' + title, -cost)
+      showFeedback(`兑换：${title}`, -cost)
     }
   }
 
   if (!mounted) {
-    return <div className="min-h-dvh flex items-center justify-center text-blue-600">加载中...</div>
+    return <div className="flex min-h-dvh items-center justify-center text-blue-600">加载中...</div>
   }
 
   const balance = profile?.balance ?? 0
-  const name = profile?.name ?? '宝贝'
-  const enabledRewards = rewards?.filter(r => r.enabled) ?? []
+  const name = profile?.name ?? '宝宝'
 
   return (
-    <div className="min-h-dvh flex flex-col px-4 pt-4 pb-20 relative overflow-y-auto overflow-x-hidden bg-white max-w-full box-border">
-      {/* Feedback animation */}
-      <AnimatePresence>
-        {feedback && (
-          <motion.div
-            initial={{ opacity: 0, y: 0, scale: 0.8 }}
-            animate={{ opacity: 1, y: -20, scale: 1 }}
-            exit={{ opacity: 0, y: -40, scale: 1.2 }}
-            className="fixed top-1/4 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
-          >
-            <div className={`text-2xl font-bold px-5 py-2 rounded-2xl shadow-lg ${
-              feedback.points >= 0
-                ? 'bg-green-500 text-white'
-                : 'bg-red-500 text-white'
-            }`}>
-              {feedback.points >= 0 ? '+' : ''}{feedback.points} {feedback.text}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div className="relative flex min-h-dvh max-w-full flex-col overflow-x-hidden overflow-y-auto bg-white px-4 pb-20 pt-4 box-border">
+      <FeedbackToast feedback={feedback} topClassName="top-1/4" />
 
-      {/* Top: score - blue hero area */}
-      <div className={`flex-shrink-0 rounded-2xl px-4 py-5 text-white -mx-4 mb-4 ${balance < 0 ? 'bg-red-500' : 'bg-blue-500'}`}>
+      <div className={`-mx-4 mb-4 rounded-2xl px-4 py-5 text-white ${balance < 0 ? 'bg-red-500' : 'bg-blue-500'}`}>
         <div className="flex items-center justify-between">
           <div className="text-lg font-bold">{name}的积分</div>
           <Link
             href="/parent"
-            className="text-sm text-blue-200 hover:text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-colors"
+            className="rounded-lg px-3 py-1.5 text-sm text-blue-200 transition-colors hover:bg-blue-600 hover:text-white"
           >
             管理 →
           </Link>
         </div>
-        <div className="flex items-end gap-2 mt-2">
+        <div className="mt-2 flex items-end gap-2">
           <div className="text-5xl font-black leading-none tabular-nums">
             <AnimatedNumber value={balance} />
           </div>
-          <div className="text-lg font-medium pb-1 opacity-80">分</div>
+          <div className="pb-1 text-lg font-medium opacity-80">分</div>
         </div>
       </div>
 
-      {/* Task cards - 4 columns */}
       <div className="mt-2">
-        <div className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
-          <span className="w-1 h-4 bg-green-500 rounded-full inline-block"></span>
+        <div className="mb-2 flex items-center gap-1 text-sm font-semibold text-gray-700">
+          <span className="inline-block h-4 w-1 rounded-full bg-green-500" />
           加分
         </div>
         <div className="grid grid-cols-4 gap-2">
           {tasks?.map((task) => (
             <motion.div key={task.id} whileTap={{ scale: 0.93 }}>
               <Card
-                className="cursor-pointer hover:shadow-md transition-shadow hover:border-green-300 h-[76px]"
+                className="h-[76px] cursor-pointer transition-shadow hover:border-green-300 hover:shadow-md"
                 onClick={() => handleAddPoints(task.id!, task.title)}
               >
-                <CardContent className="flex flex-col items-center justify-center h-full py-0 gap-0.5">
+                <CardContent className="flex h-full flex-col items-center justify-center gap-0.5 py-0">
                   <span className="text-xl">{task.icon}</span>
-                  <span className="font-medium text-[11px] leading-tight text-center line-clamp-2 text-gray-700">{task.title}</span>
+                  <span className="line-clamp-2 text-center text-[11px] font-medium leading-tight text-gray-700">
+                    {task.title}
+                  </span>
                 </CardContent>
               </Card>
             </motion.div>
@@ -148,27 +135,27 @@ export default function ChildDashboard() {
         </div>
       </div>
 
-      {/* Manual add */}
       <div className="mt-4">
-        <div className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
-          <span className="w-1 h-4 bg-green-500 rounded-full inline-block"></span>
+        <div className="mb-2 flex items-center gap-1 text-sm font-semibold text-gray-700">
+          <span className="inline-block h-4 w-1 rounded-full bg-green-500" />
           自定义加分
         </div>
         <form
-          onSubmit={async (e) => {
-            e.preventDefault()
-            const form = new FormData(e.currentTarget)
+          className="flex flex-wrap items-center gap-2"
+          onSubmit={async (event) => {
+            event.preventDefault()
+            const form = new FormData(event.currentTarget)
             const reason = (form.get('reason') as string)?.trim()
-            const sel = form.get('amount') as string
-            const amount = sel === 'custom' ? Number(form.get('customAmount')) : Number(sel)
+            const selectedAmount = form.get('amount') as string
+            const amount = selectedAmount === 'custom' ? Number(form.get('customAmount')) : Number(selectedAmount)
             if (!reason || !amount || amount <= 0) return
+
             await manualAdjust(amount, reason, 'manual')
             showFeedback(reason, amount)
-            ;(e.target as HTMLFormElement).reset()
+            event.currentTarget.reset()
             setCustomAddAmount(false)
-            ;(document.activeElement as HTMLElement)?.blur()
+            ;(document.activeElement as HTMLElement | null)?.blur()
           }}
-          className="flex flex-wrap gap-2 items-center"
         >
           <input
             name="reason"
@@ -177,8 +164,8 @@ export default function ChildDashboard() {
           />
           <select
             name="amount"
-            className="rounded-lg border border-gray-200 px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-400 shrink-0"
-            onChange={(e) => setCustomAddAmount(e.target.value === 'custom')}
+            className="shrink-0 rounded-lg border border-gray-200 bg-white px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+            onChange={(event) => setCustomAddAmount(event.target.value === 'custom')}
           >
             <option value="1">+1</option>
             <option value="2">+2</option>
@@ -193,36 +180,36 @@ export default function ChildDashboard() {
               type="number"
               min="1"
               placeholder="分值"
-              className="w-16 rounded-lg border border-gray-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 shrink-0"
+              className="w-16 shrink-0 rounded-lg border border-gray-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
             />
           )}
-          <Button type="submit" size="sm" className="px-4 shrink-0 bg-green-500 hover:bg-green-600 text-white">
+          <Button type="submit" size="sm" className="shrink-0 bg-green-500 px-4 text-white hover:bg-green-600">
             加分
           </Button>
         </form>
       </div>
 
-      {/* Manual deduct */}
       <div className="mt-4">
-        <div className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
-          <span className="w-1 h-4 bg-red-500 rounded-full inline-block"></span>
+        <div className="mb-2 flex items-center gap-1 text-sm font-semibold text-gray-700">
+          <span className="inline-block h-4 w-1 rounded-full bg-red-500" />
           自定义扣分
         </div>
         <form
-          onSubmit={async (e) => {
-            e.preventDefault()
-            const form = new FormData(e.currentTarget)
+          className="flex flex-wrap items-center gap-2"
+          onSubmit={async (event) => {
+            event.preventDefault()
+            const form = new FormData(event.currentTarget)
             const reason = (form.get('reason') as string)?.trim()
-            const sel = form.get('amount') as string
-            const amount = sel === 'custom' ? Number(form.get('customAmount')) : Number(sel)
+            const selectedAmount = form.get('amount') as string
+            const amount = selectedAmount === 'custom' ? Number(form.get('customAmount')) : Number(selectedAmount)
             if (!reason || !amount || amount <= 0) return
+
             await manualAdjust(amount, reason, 'deduct')
             showFeedback(reason, -amount)
-            ;(e.target as HTMLFormElement).reset()
+            event.currentTarget.reset()
             setCustomDeductAmount(false)
-            ;(document.activeElement as HTMLElement)?.blur()
+            ;(document.activeElement as HTMLElement | null)?.blur()
           }}
-          className="flex flex-wrap gap-2 items-center"
         >
           <input
             name="reason"
@@ -231,8 +218,8 @@ export default function ChildDashboard() {
           />
           <select
             name="amount"
-            className="rounded-lg border border-gray-200 px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-400 shrink-0"
-            onChange={(e) => setCustomDeductAmount(e.target.value === 'custom')}
+            className="shrink-0 rounded-lg border border-gray-200 bg-white px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+            onChange={(event) => setCustomDeductAmount(event.target.value === 'custom')}
           >
             <option value="1">-1</option>
             <option value="2">-2</option>
@@ -247,22 +234,21 @@ export default function ChildDashboard() {
               type="number"
               min="1"
               placeholder="分值"
-              className="w-16 rounded-lg border border-gray-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 shrink-0"
+              className="w-16 shrink-0 rounded-lg border border-gray-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
             />
           )}
-          <Button type="submit" size="sm" className="px-4 shrink-0 bg-red-500 hover:bg-red-600 text-white">
+          <Button type="submit" size="sm" className="shrink-0 bg-red-500 px-4 text-white hover:bg-red-600">
             扣分
           </Button>
         </form>
       </div>
 
-      {/* Rewards - collapsible with visual distinction */}
       <div className="mt-5">
         <button
-          onClick={() => setRewardExpanded(!rewardExpanded)}
-          className="w-full flex items-center justify-between text-sm font-semibold text-purple-700 mb-2 bg-purple-50 rounded-lg px-3 py-2.5 border border-purple-200"
+          onClick={() => setRewardExpanded((current) => !current)}
+          className="flex w-full items-center justify-between rounded-lg border border-purple-200 bg-purple-50 px-3 py-2.5 text-sm font-semibold text-purple-700"
         >
-          <span>🎁 兑换奖励 ({enabledRewards.length})</span>
+          <span>🏆 兑换奖励 ({rewards?.length ?? 0})</span>
           <span className="text-purple-400">{rewardExpanded ? '收起 ▲' : '展开 ▼'}</span>
         </button>
         <AnimatePresence>
@@ -271,9 +257,9 @@ export default function ChildDashboard() {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden space-y-2"
+              className="space-y-2 overflow-hidden"
             >
-              {enabledRewards.map((reward) => {
+              {rewards?.map((reward) => {
                 const canRedeem = balance >= reward.cost
                 return (
                   <motion.div key={reward.id} whileTap={{ scale: 0.97 }}>
@@ -283,36 +269,33 @@ export default function ChildDashboard() {
                           <span className="text-xl">{reward.icon}</span>
                           <div>
                             <span className="text-sm font-medium">{reward.title}</span>
-                            <span className="text-xs text-purple-500 ml-1.5">{reward.cost}分</span>
+                            <span className="ml-1.5 text-xs text-purple-500">{reward.cost}分</span>
                           </div>
                         </div>
                         <Button
                           size="sm"
-                          className={canRedeem ? 'bg-purple-500 hover:bg-purple-600 text-white' : 'bg-orange-400 hover:bg-orange-500 text-white'}
+                          className={canRedeem ? 'bg-purple-500 text-white hover:bg-purple-600' : 'bg-orange-400 text-white hover:bg-orange-500'}
                           onClick={() => handleRedeem(reward.id!, reward.title, reward.cost)}
                         >
-                          {canRedeem ? `${reward.cost}分` : `欠${reward.cost - balance}分`}
+                          {canRedeem ? `${reward.cost}分兑` : `欠${reward.cost - balance}分兑`}
                         </Button>
                       </CardContent>
                     </Card>
                   </motion.div>
                 )
               })}
-              {enabledRewards.length === 0 && (
-                <div className="text-center text-sm text-muted-foreground py-4">
-                  暂无奖励，在管理页添加
-                </div>
+              {(!rewards || rewards.length === 0) && (
+                <div className="py-4 text-center text-sm text-muted-foreground">暂无奖励，可在管理页添加</div>
               )}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Today's records */}
       {todayLogs && todayLogs.length > 0 && (
         <div className="mt-5">
-          <div className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
-            <span className="w-1 h-4 bg-blue-500 rounded-full inline-block"></span>
+          <div className="mb-2 flex items-center gap-1 text-sm font-semibold text-gray-700">
+            <span className="inline-block h-4 w-1 rounded-full bg-blue-500" />
             今日记录
           </div>
           <div className="space-y-1.5">
@@ -321,21 +304,14 @@ export default function ChildDashboard() {
               return (
                 <div
                   key={log.id}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
-                    isEarn
-                      ? 'bg-green-50 border border-green-100'
-                      : 'bg-red-50 border border-red-100'
+                  className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${
+                    isEarn ? 'border-green-100 bg-green-50' : 'border-red-100 bg-red-50'
                   }`}
                 >
-                  <span className={`flex-1 truncate ${isEarn ? 'text-gray-700' : 'text-gray-700'}`}>
-                    {log.reason}
-                  </span>
-                  <span
-                    className={`font-semibold tabular-nums shrink-0 ml-2 ${
-                      isEarn ? 'text-green-600' : 'text-red-600'
-                    }`}
-                  >
-                    {isEarn ? '+' : ''}{log.amount}分
+                  <span className="flex-1 truncate text-gray-700">{log.reason}</span>
+                  <span className={`ml-2 shrink-0 font-semibold tabular-nums ${isEarn ? 'text-green-600' : 'text-red-600'}`}>
+                    {isEarn ? '+' : ''}
+                    {log.amount}分
                   </span>
                 </div>
               )

@@ -1,10 +1,10 @@
-import { db, type Profile, type Task, type Reward } from './db'
+import { db, type Profile, type Reward, type Task } from './db'
 
 const DEFAULT_TASKS: Omit<Task, 'id'>[] = [
   { title: '早起', points: 1, icon: '☀️', sortOrder: 0 },
   { title: '阅读', points: 1, icon: '📖', sortOrder: 1 },
   { title: '收拾房间', points: 1, icon: '🧹', sortOrder: 2 },
-  { title: '帮忙做家务', points: 1, icon: '🏠', sortOrder: 3 },
+  { title: '帮忙做家务', points: 1, icon: '🧺', sortOrder: 3 },
   { title: '认真吃饭', points: 1, icon: '🍚', sortOrder: 4 },
   { title: '按时睡觉', points: 1, icon: '🌙', sortOrder: 5 },
   { title: '画画/手工', points: 1, icon: '🎨', sortOrder: 6 },
@@ -20,7 +20,7 @@ const DEFAULT_REWARDS: Omit<Reward, 'id'>[] = [
 ]
 
 const DEFAULT_PROFILE: Omit<Profile, 'id'> = {
-  name: '宝贝',
+  name: '宝宝',
   balance: 0,
 }
 
@@ -40,17 +40,17 @@ export async function seedDatabase() {
     if (rewardCount === 0) {
       await db.rewards.bulkAdd(DEFAULT_REWARDS)
     }
-  } catch (e) {
-    console.error('seedDatabase error:', e)
-    // If DB is corrupted, try to recover by deleting and re-opening
+  } catch (error) {
+    console.error('seedDatabase error:', error)
+
     try {
       await db.delete()
       await db.open()
       await db.profiles.add(DEFAULT_PROFILE)
       await db.tasks.bulkAdd(DEFAULT_TASKS)
       await db.rewards.bulkAdd(DEFAULT_REWARDS)
-    } catch (e2) {
-      console.error('seedDatabase recovery failed:', e2)
+    } catch (recoveryError) {
+      console.error('seedDatabase recovery failed:', recoveryError)
     }
   }
 }
